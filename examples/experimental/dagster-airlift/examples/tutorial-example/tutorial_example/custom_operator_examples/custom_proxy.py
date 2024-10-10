@@ -3,7 +3,11 @@ from pathlib import Path
 import requests
 from airflow import DAG
 from airflow.utils.context import Context
-from dagster_airlift.in_airflow import BaseProxyTaskToDagsterOperator, proxying_to_dagster
+from dagster_airlift.in_airflow import (
+    BaseProxyTaskToDagsterOperator,
+    build_dagster_task,
+    proxying_to_dagster,
+)
 from dagster_airlift.in_airflow.proxied_state import load_proxied_state_from_yaml
 
 
@@ -28,5 +32,7 @@ dag = DAG(
 proxying_to_dagster(
     global_vars=globals(),
     proxied_state=load_proxied_state_from_yaml(Path(__file__).parent / "proxied_state"),
-    dagster_operator_klass=CustomProxyToDagsterOperator,
+    operator_construction_callback=lambda task: build_dagster_task(
+        task, CustomProxyToDagsterOperator
+    ),
 )

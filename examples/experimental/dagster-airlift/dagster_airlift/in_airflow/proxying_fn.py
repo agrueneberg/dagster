@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Dict, List, Optional, Set, Type
+from typing import Any, Callable, Dict, List, Optional, Set
 
 from airflow import DAG
 from airflow.models import BaseOperator, Variable
@@ -21,9 +21,9 @@ def proxying_to_dagster(
     global_vars: Dict[str, Any],
     proxied_state: AirflowProxiedState,
     logger: Optional[logging.Logger] = None,
-    dagster_operator_klass: Type[
-        BaseProxyTaskToDagsterOperator
-    ] = DefaultProxyTaskToDagsterOperator,
+    operator_construction_callback: Optional[
+        Callable[[BaseOperator], BaseProxyTaskToDagsterOperator]
+    ] = None,
 ) -> None:
     """Uses passed-in dictionary to alter dags and tasks to proxy to dagster.
     Uses a proxied dictionary to determine the proxied status for each task within each dag.
@@ -36,6 +36,9 @@ def proxying_to_dagster(
         proxied_state (AirflowMigrationState): The proxied state for the dags.
         logger (Optional[logging.Logger]): The logger to use. Defaults to logging.getLogger("dagster_airlift").
     """
+    operator_construction_callback = (
+        operator_construction_callback or default_operator_construction_callback
+    )
     caller_module = global_vars.get("__module__")
     suffix = f" in module `{caller_module}`" if caller_module else ""
     if not logger:
@@ -116,7 +119,7 @@ def proxying_to_dagster(
             logger.debug(
                 f"Creating new operator for task {original_op.task_id} in dag {original_op.dag_id}"
             )
-            new_op = build_dagster_task(original_op, dagster_operator_klass)
+            new_op = operator_construction_callback(original_op)
             original_op.dag.task_dict[original_op.task_id] = new_op
 
             new_op.upstream_task_ids = original_op.upstream_task_ids
@@ -127,6 +130,12 @@ def proxying_to_dagster(
         logger.debug(f"Proxied tasks {proxied_tasks} in dag {dag.dag_id}.")
     logging.debug(f"Proxied {len(task_level_proxying_dags)}.")
     logging.debug(f"Completed switching proxied tasks to dagster{suffix}.")
+
+
+def default_operator_construction_callback(
+    original_task: BaseOperator,
+) -> BaseProxyTaskToDagsterOperator:
+    return build_dagster_task(original_task, DefaultProxyTaskToDagsterOperator)
 
 
 def set_proxied_state_for_dag_if_changed(

@@ -1,7 +1,7 @@
 import inspect
 import json
 import os
-from typing import Any, Callable, Dict, Iterable, Mapping, Sequence, Set, Tuple, Type
+from typing import Any, Callable, Dict, Iterable, Mapping, Optional, Sequence, Set, Tuple, Type
 
 import requests
 from airflow.models.operator import BaseOperator
@@ -37,13 +37,19 @@ class DefaultProxyTaskToDagsterOperator(BaseProxyTaskToDagsterOperator):
 
 
 def build_dagster_task(
-    original_task: BaseOperator, dagster_operator_klass: Type[BaseProxyTaskToDagsterOperator]
+    original_task: BaseOperator,
+    dagster_operator_klass: Type[BaseProxyTaskToDagsterOperator],
+    operator_overrides: Optional[Mapping[str, Any]] = None,
 ) -> BaseProxyTaskToDagsterOperator:
-    return instantiate_dagster_operator(original_task, dagster_operator_klass)
+    return instantiate_dagster_operator(
+        original_task, dagster_operator_klass, operator_overrides or {}
+    )
 
 
 def instantiate_dagster_operator(
-    original_task: BaseOperator, dagster_operator_klass: Type[BaseProxyTaskToDagsterOperator]
+    original_task: BaseOperator,
+    dagster_operator_klass: Type[BaseProxyTaskToDagsterOperator],
+    operator_overrides: Mapping[str, Any],
 ) -> BaseProxyTaskToDagsterOperator:
     """Instantiates a DagsterOperator as a copy of the provided airflow task.
 
@@ -85,7 +91,10 @@ def instantiate_dagster_operator(
             continue
         init_kwargs[kwarg] = getattr(original_task, kwarg, default)
 
-    return dagster_operator_klass(**init_kwargs)
+    # Make sure that the operator overrides take precedence.
+    complete_init_kwargs = {**init_kwargs, **operator_overrides}
+
+    return dagster_operator_klass(**complete_init_kwargs)
 
 
 def get_params(func: Callable[..., Any]) -> Tuple[Set[str], Dict[str, Any]]:

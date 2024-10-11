@@ -130,7 +130,7 @@ class AutomationConditionEvaluator:
             )
 
             try:
-                self.evaluate_entity(entity_key)
+                await self.evaluate_entity(entity_key)
             except Exception as e:
                 raise Exception(
                     f"Error while evaluating conditions for {entity_key.to_user_string()}"
@@ -161,10 +161,9 @@ class AutomationConditionEvaluator:
 
         return list(self.current_results_by_key.values()), list(self._get_entity_subsets())
 
-    def evaluate_entity(self, key: EntityKey) -> None:
+    async def evaluate_entity(self, key: EntityKey) -> None:
         # evaluate the condition of this asset
-        context = AutomationContext.create(key=key, evaluator=self)
-        result = context.condition.evaluate(context)
+        result = await AutomationContext.create(key=key, evaluator=self).evaluate_async()
 
         # update dictionaries to keep track of this result
         self.current_results_by_key[key] = result

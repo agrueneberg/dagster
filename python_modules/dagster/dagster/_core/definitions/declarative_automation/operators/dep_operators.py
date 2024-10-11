@@ -26,13 +26,15 @@ class EntityMatchesCondition(
     key: U_EntityKey
     operand: AutomationCondition[U_EntityKey]
 
-    def evaluate(self, context: AutomationContext[T_EntityKey]) -> AutomationResult[T_EntityKey]:
+    async def evaluate(
+        self, context: AutomationContext[T_EntityKey]
+    ) -> AutomationResult[T_EntityKey]:
         to_candidate_subset = context.candidate_subset.compute_mapped_subset(self.key)
         to_context = context.for_child_condition(
             child_condition=self.operand, child_index=0, candidate_subset=to_candidate_subset
         )
 
-        to_result = self.operand.evaluate(to_context)
+        to_result = await to_context.evaluate_async()
 
         true_subset = to_result.true_subset.compute_mapped_subset(context.key)
         return AutomationResult(context=context, true_subset=true_subset, child_results=[to_result])
@@ -108,13 +110,15 @@ class AnyDepsCondition(DepCondition[T_EntityKey]):
     def name(self) -> str:
         return "ANY_DEPS_MATCH"
 
-    def evaluate(self, context: AutomationContext[T_EntityKey]) -> AutomationResult[T_EntityKey]:
+    async def evaluate(
+        self, context: AutomationContext[T_EntityKey]
+    ) -> AutomationResult[T_EntityKey]:
         dep_results = []
         true_subset = context.get_empty_subset()
 
         for i, dep_key in enumerate(sorted(self._get_dep_keys(context.key, context.asset_graph))):
             dep_condition = EntityMatchesCondition(key=dep_key, operand=self.operand)
-            dep_result = dep_condition.evaluate(
+            dep_result = await dep_condition.evaluate(
                 context.for_child_condition(
                     child_condition=dep_condition,
                     child_index=i,
@@ -138,13 +142,15 @@ class AllDepsCondition(DepCondition[T_EntityKey]):
     def name(self) -> str:
         return "ALL_DEPS_MATCH"
 
-    def evaluate(self, context: AutomationContext[T_EntityKey]) -> AutomationResult[T_EntityKey]:
+    async def evaluate(
+        self, context: AutomationContext[T_EntityKey]
+    ) -> AutomationResult[T_EntityKey]:
         dep_results = []
         true_subset = context.candidate_subset
 
         for i, dep_key in enumerate(sorted(self._get_dep_keys(context.key, context.asset_graph))):
             dep_condition = EntityMatchesCondition(key=dep_key, operand=self.operand)
-            dep_result = dep_condition.evaluate(
+            dep_result = await dep_condition.evaluate(
                 context.for_child_condition(
                     child_condition=dep_condition,
                     child_index=i,

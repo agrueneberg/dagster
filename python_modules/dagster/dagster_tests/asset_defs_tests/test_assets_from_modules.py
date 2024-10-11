@@ -60,6 +60,8 @@ def assert_assets_have_prefix(
                 observed_prefix = asset_key.path[:-1]
                 if len(observed_prefix) == 1:
                     observed_prefix = observed_prefix[0]
+                else:
+                    observed_prefix = list(observed_prefix)
                 assert observed_prefix == prefix
 
 

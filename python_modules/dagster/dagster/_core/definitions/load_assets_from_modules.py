@@ -398,7 +398,7 @@ def prefix_assets(
 
     if isinstance(key_prefix, str):
         key_prefix = [key_prefix]
-    key_prefix = check.is_list(key_prefix, of_type=str)
+    key_prefix = check.sequence_param(key_prefix, "key_prefix", of_type=str)
 
     if isinstance(source_key_prefix, str):
         source_key_prefix = [source_key_prefix]

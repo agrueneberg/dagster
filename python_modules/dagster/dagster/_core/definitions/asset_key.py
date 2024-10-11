@@ -41,26 +41,17 @@ class AssetKey(NamedTuple("_AssetKey", [("path", PublicAttr[Sequence[str]])])):
 
     def __new__(cls, path: Union[str, Sequence[str]]):
         if isinstance(path, str):
-            path = [path]
+            path = (path,)
         else:
-            path = list(check.sequence_param(path, "path", of_type=str))
+            path = tuple(check.sequence_param(path, "path", of_type=str))
 
         return super(AssetKey, cls).__new__(cls, path=path)
 
     def __str__(self):
-        return f"AssetKey({self.path})"
+        return f"AssetKey({list(self.path)})"
 
     def __repr__(self):
-        return f"AssetKey({self.path})"
-
-    def __hash__(self):
-        return hash(tuple(self.path))
-
-    def __eq__(self, other):
-        if other.__class__ is not self.__class__:
-            return False
-
-        return self.path == other.path
+        return f"AssetKey({list(self.path)})"
 
     def to_string(self) -> str:
         """E.g. '["first_component", "second_component"]'."""
@@ -169,7 +160,7 @@ def check_opt_coercible_to_asset_key_prefix_param(
 def key_prefix_from_coercible(key_prefix: CoercibleToAssetKeyPrefix) -> Sequence[str]:
     if isinstance(key_prefix, str):
         return [key_prefix]
-    elif isinstance(key_prefix, list):
+    elif isinstance(key_prefix, (list, tuple)):
         return key_prefix
     else:
         check.failed(f"Unexpected type for key_prefix: {type(key_prefix)}")

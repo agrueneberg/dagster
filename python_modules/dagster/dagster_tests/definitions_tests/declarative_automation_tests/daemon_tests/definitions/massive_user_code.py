@@ -32,4 +32,4 @@ def get_defs(n: int) -> Definitions:
     )
 
 
-defs = get_defs(700)
+defs = get_defs(500)

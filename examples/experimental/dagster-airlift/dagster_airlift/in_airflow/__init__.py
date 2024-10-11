@@ -7,3 +7,7 @@ from .task_proxy_operator import (
     BaseProxyTaskToDagsterOperator as BaseProxyTaskToDagsterOperator,
     DefaultProxyTaskToDagsterOperator as DefaultProxyTaskToDagsterOperator,
 )
+from .dag_proxy_operator import (
+    BaseProxyDAGToDagsterOperator as BaseProxyDAGToDagsterOperator,
+    DefaultProxyDAGToDagsterOperator as DefaultProxyDAGToDagsterOperator,
+)

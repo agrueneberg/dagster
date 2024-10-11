@@ -6,7 +6,10 @@ from airflow import DAG
 from airflow.models import BaseOperator, Variable
 from airflow.utils.session import create_session
 
-from dagster_airlift.in_airflow.dag_proxy_operator import build_dag_level_proxied_task
+from dagster_airlift.in_airflow.dag_proxy_operator import (
+    BaseProxyDAGToDagsterOperator,
+    default_dag_level_proxied_task,
+)
 from dagster_airlift.in_airflow.proxied_state import AirflowProxiedState, DagProxiedState
 from dagster_airlift.in_airflow.task_proxy_operator import (
     BaseProxyTaskToDagsterOperator,
@@ -24,6 +27,9 @@ def proxying_to_dagster(
     operator_construction_callback: Optional[
         Callable[[BaseOperator], BaseProxyTaskToDagsterOperator]
     ] = None,
+    full_dag_operator_construction_callback: Optional[
+        Callable[[DAG], BaseProxyDAGToDagsterOperator]
+    ] = None,
 ) -> None:
     """Uses passed-in dictionary to alter dags and tasks to proxy to dagster.
     Uses a proxied dictionary to determine the proxied status for each task within each dag.
@@ -38,6 +44,9 @@ def proxying_to_dagster(
     """
     operator_construction_callback = (
         operator_construction_callback or default_operator_construction_callback
+    )
+    full_dag_operator_construction_callback = (
+        full_dag_operator_construction_callback or default_dag_level_proxied_task
     )
     caller_module = global_vars.get("__module__")
     suffix = f" in module `{caller_module}`" if caller_module else ""
@@ -85,7 +94,7 @@ def proxying_to_dagster(
         dag.tags = [*dag.tags, "Dag overriden to Dagster"]
         dag.task_dict = {}
         dag.task_group.children = {}
-        override_task = build_dag_level_proxied_task(dag)
+        override_task = full_dag_operator_construction_callback(dag)
         dag.task_dict[override_task.task_id] = override_task
     for dag in task_level_proxying_dags:
         logger.debug(f"Tagging dag {dag.dag_id} as proxied.")

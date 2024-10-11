@@ -33,7 +33,7 @@ class DefaultProxyDAGToDagsterOperator(BaseProxyDAGToDagsterOperator):
         return os.environ["DAGSTER_URL"]
 
 
-def build_dag_level_proxied_task(dag: DAG) -> DefaultProxyDAGToDagsterOperator:
+def default_dag_level_proxied_task(dag: DAG) -> DefaultProxyDAGToDagsterOperator:
     return DefaultProxyDAGToDagsterOperator(
         task_id=f"DAGSTER_OVERRIDE_DAG_{dag.dag_id}",
         dag=dag,
